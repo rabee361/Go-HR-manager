@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{block "title" .}}HR Dashboard{{end}}</title>
+
+    <!-- Design Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets (Minified) -->
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    <!-- HTMX -->
+    <script src="/static/js/htmx.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <span class="brand-icon">💼</span>
+                <span>HR Master</span>
+            </div>
+
+            <div class="nav-actions">
+                <button id="theme-toggle" class="btn btn-ghost" title="Toggle Theme">
+                    🌙
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content (Left/Center) -->
+        <main class="main-content">
+            {{block "content" .}}
+            <!-- Content will be injected here -->
+            {{end}}
+        </main>
+
+        <!-- Sidebar (Right) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <small class="text-muted">MENU</small>
+            </div>
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="/" class="nav-link {{if eq .ActivePage " dashboard"}}active{{end}}">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/departments" class="nav-link {{if eq .ActivePage " departments"}}active{{end}}">
+                        <span class="nav-icon">🏢</span>
+                        <span>Departments</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/positions" class="nav-link {{if eq .ActivePage " positions"}}active{{end}}">
+                        <span class="nav-icon">🏷️</span>
+                        <span>Positions</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/employees" class="nav-link {{if eq .ActivePage " employees"}}active{{end}}">
+                        <span class="nav-icon">👥</span>
+                        <span>Employees</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/applications" class="nav-link {{if eq .ActivePage " applications"}}active{{end}}">
+                        <span class="nav-icon">📄</span>
+                        <span>Applications</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <!-- Scripts (Minified) -->
+    <script src="/static/js/min/theme.min.js"></script>
+</body>
+
+</html>

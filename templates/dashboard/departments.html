@@ -1,0 +1,55 @@
+{{template "base.html" .}}
+
+{{define "title"}}HR Dashboard - Departments{{end}}
+
+{{define "content"}}
+<div class="animate-fade-in">
+    <header class="table-header">
+        <div>
+            <h1 class="text-2xl font-bold">Departments Management</h1>
+            <p class="text-muted">Manage company organizational units.</p>
+        </div>
+        <div class="search-bar">
+            <span class="search-icon"
+                style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);">🔍</span>
+            <input type="text" name="q" class="search-input" placeholder="Search departments..."
+                hx-get="/departments/search" hx-trigger="keyup changed delay:500ms" hx-target="#departments-table-body"
+                hx-indicator=".htmx-indicator">
+        </div>
+    </header>
+
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Department Name</th>
+                    <th>Description</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="departments-table-body">
+                <!-- Data will go here. Showing pseudo data for now -->
+                {{range .Departments}}
+                <tr>
+                    <td>#{{.ID}}</td>
+                    <td><strong>{{.name}}</strong></td>
+                    <td>{{.description}}</td>
+                    <td>{{.CreatedAt.Format "Jan 02, 2006"}}</td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" title="Edit">✏️</button>
+                        <button class="btn btn-ghost btn-sm text-danger" title="Delete">🗑️</button>
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="5" class="text-center p-8 text-muted">No departments found.</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        <div class="htmx-indicator" style="padding: 1rem; text-align: center;">Loading...</div>
+    </div>
+</div>
+{{end}}

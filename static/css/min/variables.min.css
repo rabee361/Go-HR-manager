@@ -1,0 +1,47 @@
+/* CSS Variables for HR Dashboard */
+:root {
+    /* Light Theme Colors (Default) */
+    --bg-main: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-accent: #f1f5f9;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --primary-light: #e0e7ff;
+
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+
+    --border: #e2e8f0;
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+    /* Layout */
+    --navbar-height: 64px;
+    --sidebar-width: 260px;
+
+    /* Transitions */
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme='dark'] {
+    /* Dark Theme Colors */
+    --bg-main: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-accent: #334155;
+
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+
+    --primary: #818cf8;
+    --primary-hover: #6366f1;
+    --primary-light: #312e81;
+
+    --border: #334155;
+    --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+}

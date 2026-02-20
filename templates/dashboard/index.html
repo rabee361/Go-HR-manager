@@ -1,0 +1,49 @@
+{{template "base.html" .}}
+
+{{define "title"}}HR Dashboard - Overview{{end}}
+
+{{define "content"}}
+<div class="animate-fade-in">
+    <header class="mb-8">
+        <h1 class="text-2xl font-bold">Main Dashboard</h1>
+        <p class="text-muted">Welcome back! Here's what's happening today.</p>
+    </header>
+
+    <!-- Stats Cards Section -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Employees</div>
+            <div class="stat-value">124</div>
+            <div class="stat-meta text-success">
+                <span>↑ 12%</span>
+                <span class="text-xs text-muted">vs last month</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Departments</div>
+            <div class="stat-value">8</div>
+            <div class="stat-meta">
+                <span class="text-xs text-muted">Fully operational</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Pending Applications</div>
+            <div class="stat-value">42</div>
+            <div class="stat-meta text-warning">
+                <span>15 New</span>
+                <span class="text-xs text-muted">since yesterday</span>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Open Positions</div>
+            <div class="stat-value">12</div>
+            <div class="stat-meta">
+                <span class="text-xs text-muted">Hiring active</span>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

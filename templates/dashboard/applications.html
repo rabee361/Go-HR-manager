@@ -1,0 +1,83 @@
+{{template "base.html" .}}
+
+{{define "title"}}HR Dashboard - Applications{{end}}
+
+{{define "content"}}
+<div class="animate-fade-in">
+    <header class="table-header">
+        <div>
+            <h1 class="text-2xl font-bold">Candidates & Applications</h1>
+            <p class="text-muted">Review job applications and hiring progress.</p>
+        </div>
+        <div class="search-bar">
+            <span class="search-icon"
+                style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);">🔍</span>
+            <input type="text" name="q" class="search-input" placeholder="Search candidates..."
+                hx-get="/applications/search" hx-trigger="keyup changed delay:500ms"
+                hx-target="#applications-table-body" hx-indicator=".htmx-indicator">
+        </div>
+    </header>
+
+    <div class="data-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Candidate</th>
+                    <th>Applied For</th>
+                    <th>Date</th>
+                    <th>Stage</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="applications-table-body">
+                <tr>
+                    <td><strong>John Doe</strong><br><small class="text-muted">john.doe@gmail.com</small></td>
+                    <td>Junior Designer</td>
+                    <td>2 hours ago</td>
+                    <td><span class="badge badge-info">Interview</span></td>
+                    <td>
+                        <button class="btn btn-primary btn-sm">Review</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="htmx-indicator" style="padding: 1rem; text-align: center;">Loading...</div>
+    </div>
+</div>
+
+<style>
+    .badge {
+        padding: 0.25rem 0.625rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .badge-warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-info {
+        background: #e0f2fe;
+        color: #075985;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .mb-8 {
+        margin-bottom: 2rem;
+    }
+
+    .mt-4 {
+        margin-top: 1rem;
+    }
+</style>
+{{end}}
