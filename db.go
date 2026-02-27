@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -10,7 +11,7 @@ import (
 	_ "modernc.org/sqlite" // CGO-free SQLite driver
 )
 
-func connectToDB() (*sql.DB, error) {
+func connectToDB(ctx context.Context) (*sql.DB, error) {
 	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
@@ -23,19 +24,20 @@ func connectToDB() (*sql.DB, error) {
 	dbName := os.Getenv("DB_NAME")
 
 	if dbHost == "" || dbPort == "" || dbUser == "" || dbName == "" {
-		log.Fatal("Database connection details are missing. Please set DB_HOST, DB_PORT, DB_USER, DB_NAME.")
+		return nil, fmt.Errorf("database connection details are missing. Please set DB_HOST, DB_PORT, DB_USER, DB_NAME")
 	}
 
 	dbPath := fmt.Sprintf("%s.db", dbName)
 
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
+		return nil, fmt.Errorf("opening database: %w", err)
 	}
 
 	// Verify connection
-	if err := db.Ping(); err != nil {
-		log.Fatalf("Cannot connect to database: %v", err)
+	if err := db.PingContext(ctx); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("cannot connect to database: %w", err)
 	}
 
 	fmt.Printf("✅ Successfully connected to the SQLite database: %s\n", dbPath)
@@ -46,13 +48,13 @@ func connectToDB() (*sql.DB, error) {
 	if err != nil {
 		log.Printf("Warning: Could not read schema file %s: %v", sqlFile, err)
 	} else {
-		_, err = db.Exec(string(schema))
+		_, err = db.ExecContext(ctx, string(schema))
 		if err != nil {
-			log.Fatalf("Error executing schema: %v", err)
+			db.Close()
+			return nil, fmt.Errorf("executing schema: %w", err)
 		}
 		fmt.Println("🚀 Database schema initialized successfully!")
 	}
-
 
 	return db, nil
 }

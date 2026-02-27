@@ -10,38 +10,15 @@
             <p class="text-muted">Review job applications and hiring progress.</p>
         </div>
         <div class="search-bar">
-            <span class="search-icon"
-                style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);">🔍</span>
-            <input type="text" name="q" class="search-input" placeholder="Search candidates..."
-                hx-get="/applications/search" hx-trigger="keyup changed delay:500ms"
-                hx-target="#applications-table-body" hx-indicator=".htmx-indicator">
+            <span class="search-icon" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);"><i
+                    class="fa-solid fa-magnifying-glass"></i></span>
+            <input type="text" name="q" class="search-input" placeholder="Search candidates..." hx-get="/applications"
+                hx-trigger="keyup changed delay:500ms" hx-target="#applications_partial" hx-indicator=".htmx-indicator">
         </div>
     </header>
 
-    <div class="data-table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Candidate</th>
-                    <th>Applied For</th>
-                    <th>Date</th>
-                    <th>Stage</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="applications-table-body">
-                <tr>
-                    <td><strong>John Doe</strong><br><small class="text-muted">john.doe@gmail.com</small></td>
-                    <td>Junior Designer</td>
-                    <td>2 hours ago</td>
-                    <td><span class="badge badge-info">Interview</span></td>
-                    <td>
-                        <button class="btn btn-primary btn-sm">Review</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <div class="htmx-indicator" style="padding: 1rem; text-align: center;">Loading...</div>
+    <div id="applications_partial">
+        {{template "applications_partial" .}}
     </div>
 </div>
 

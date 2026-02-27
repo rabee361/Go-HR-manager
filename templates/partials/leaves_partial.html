@@ -1,0 +1,52 @@
+{{ define "leaves_partial" }}
+<div class="data-table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Employee ID</th>
+                <th>Type</th>
+                <th>Period</th>
+                <th>Status</th>
+                <th>Reason</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="leaves-table-body">
+            {{range .Leaves}}
+            <tr>
+                <td><strong>#{{.EmployeeID}}</strong></td>
+                <td><span style="text-transform: capitalize;">{{.LeaveType}}</span></td>
+                <td>
+                    <div class="text-xs">
+                        {{.StartDate.Format "Jan 02, 2006"}} - <br>
+                        {{.EndDate.Format "Jan 02, 2006"}}
+                    </div>
+                </td>
+                <td>
+                    {{if eq .Status "approved"}}
+                    <span class="badge badge-success">Approved</span>
+                    {{else if eq .Status "pending"}}
+                    <span class="badge badge-warning">Pending</span>
+                    {{else if eq .Status "rejected"}}
+                    <span class="badge badge-error">Rejected</span>
+                    {{else}}
+                    <span class="badge badge-ghost">{{.Status}}</span>
+                    {{end}}
+                </td>
+                <td><small class="text-muted">{{.Reason}}</small></td>
+                <td>
+                    <button class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn btn-ghost btn-sm text-danger"><i class="fa-solid fa-trash-can"></i></button>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem;" class="text-muted">No leave requests found.
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    <div class="htmx-indicator" style="padding: 1rem; text-align: center;">Loading...</div>
+</div>
+{{ end }}

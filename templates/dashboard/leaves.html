@@ -1,0 +1,27 @@
+{{template "base.html" .}}
+
+{{define "title"}}HR Dashboard - Leaves{{end}}
+
+{{define "content"}}
+<div class="animate-fade-in">
+    <header class="table-header">
+        <div>
+            <h1 class="text-2xl font-bold">Leave Requests</h1>
+            <p class="text-muted">Track and manage employee time off.</p>
+        </div>
+        <div class="search-bar">
+            <span class="search-icon" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);"><i
+                    class="fa-solid fa-magnifying-glass"></i></span>
+            <input type="text" name="q" class="search-input" placeholder="Search leaves..." hx-get="/leaves"
+                hx-trigger="keyup changed delay:500ms" hx-target="#leaves_partial" hx-indicator=".htmx-indicator">
+        </div>
+        <div>
+            <button class="btn btn-primary">New Request</button>
+        </div>
+    </header>
+
+    <div id="leaves_partial">
+        {{template "leaves_partial" .}}
+    </div>
+</div>
+{{end}}

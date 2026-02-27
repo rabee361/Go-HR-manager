@@ -10,49 +10,17 @@
             <p class="text-muted">Manage job roles and vacancies.</p>
         </div>
         <div class="search-bar">
-            <span class="search-icon"
-                style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);">🔍</span>
+            <span class="search-icon" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);"><i
+                    class="fa-solid fa-magnifying-glass"></i></span>
             <input type="text" name="q" class="search-input" placeholder="Search positions..."
-                hx-get="/positions/search" hx-trigger="keyup changed delay:500ms" hx-target="#positions-table-body"
+                hx-get="/positions" hx-trigger="keyup changed delay:500ms" hx-target="#positions_partial"
                 hx-indicator=".htmx-indicator">
         </div>
     </header>
 
-    <div class="data-table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Department</th>
-                    <th>Salary Range</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="positions-table-body">
-                <tr>
-                    <td><strong>Senior Go Developer</strong></td>
-                    <td>Engineering</td>
-                    <td>$120k - $160k</td>
-                    <td><span class="badge badge-success">Open</span></td>
-                    <td>
-                        <button class="btn btn-ghost btn-sm">✏️</button>
-                        <button class="btn btn-ghost btn-sm text-danger">🗑️</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td><strong>HR Manager</strong></td>
-                    <td>Operations</td>
-                    <td>$90k - $110k</td>
-                    <td><span class="badge badge-warning">On Hold</span></td>
-                    <td>
-                        <button class="btn btn-ghost btn-sm">✏️</button>
-                        <button class="btn btn-ghost btn-sm text-danger">🗑️</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <div class="htmx-indicator" style="padding: 1rem; text-align: center;">Loading...</div>
+    <div id="positions_partial">
+        {{ template "positions_partial" . }}
     </div>
+
 </div>
 {{end}}

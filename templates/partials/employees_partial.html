@@ -1,0 +1,44 @@
+{{ define "employees_partial" }}
+<div class="data-table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Position</th>
+                <th>Email</th>
+                <th>Joined</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="employees-table-body">
+            {{range .Employees}}
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div
+                            style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                            {{slice .FirstName 0 1}}</div>
+                        <div>
+                            <strong>{{.FirstName}} {{.LastName}}</strong><br>
+                            <small class="text-muted">{{.Email}}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>{{.JobTitle}}</td>
+                <td>{{.Email}}</td>
+                <td>{{.HireDate.Format "Jan 02, 2006"}}</td>
+                <td>
+                    <button class="btn btn-ghost btn-sm"><i class="fa-solid fa-eye"></i></button>
+                    <button class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen-to-square"></i></button>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem;" class="text-muted">No employees found.</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    <div class="htmx-indicator" style="padding: 1rem; text-align: center;">Loading...</div>
+</div>
+{{ end }}

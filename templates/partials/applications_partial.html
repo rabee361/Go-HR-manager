@@ -1,0 +1,44 @@
+{{ define "applications_partial" }}
+<div class="data-table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Candidate</th>
+                <th>Applied For</th>
+                <th>Date</th>
+                <th>Stage</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="applications-table-body">
+            {{range .Applications}}
+            <tr>
+                <td><strong>{{.Name}}</strong><br><small class="text-muted">{{.Email}}</small></td>
+                <td>{{.AppliedFor}}</td>
+                <td>{{.CreatedAt.Format "Jan 02, 2006"}}</td>
+                <td>
+                    {{if eq .Status "pending"}}
+                    <span class="badge badge-warning">Pending</span>
+                    {{else if eq .Status "interviewing"}}
+                    <span class="badge badge-info">Interview</span>
+                    {{else if eq .Status "accepted"}}
+                    <span class="badge badge-success">Accepted</span>
+                    {{else}}
+                    <span class="badge badge-ghost">{{.Status}}</span>
+                    {{end}}
+                </td>
+                <td>
+                    <button class="btn btn-primary btn-sm"><i class="fa-solid fa-file-signature"></i> Review</button>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="5" style="text-align: center; padding: 2rem;" class="text-muted">No applications found.
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    <div class="htmx-indicator" style="padding: 1rem; text-align: center;">Loading...</div>
+</div>
+{{ end }}

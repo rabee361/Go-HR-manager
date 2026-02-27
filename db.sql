@@ -26,13 +26,13 @@ CREATE TABLE IF NOT EXISTS employees (
 -- 3. Applications table (Job applications)
 CREATE TABLE IF NOT EXISTS applications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    applicant_name TEXT NOT NULL,
+    name TEXT NOT NULL,
     email TEXT NOT NULL,
     phone TEXT,
     applied_for TEXT, -- Position name
     resume_url TEXT,
     status TEXT DEFAULT 'pending', -- e.g., pending, interviewing, accepted, rejected
-    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 4. Leaves table (Vacation/Sick leave requests)
@@ -48,25 +48,38 @@ CREATE TABLE IF NOT EXISTS leaves (
     FOREIGN KEY (employee_id) REFERENCES employees(id)
 );
 
+-- 5. Positions table
+CREATE TABLE IF NOT EXISTS positions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_employees_department_id ON employees(department_id);
 CREATE INDEX IF NOT EXISTS idx_leaves_employee_id ON leaves(employee_id);
 
--- Dummy Data for testing
-INSERT INTO departments (name, description) VALUES 
-('Engineering', 'Software and infrastructure development'),
-('Human Resources', 'Recruitment and employee relations'),
-('Marketing', 'Brand awareness and sales support');
+-- -- Dummy Data for testing
+-- INSERT OR IGNORE INTO departments (name, description) VALUES 
+-- ('Engineering', 'Software and infrastructure development'),
+-- ('Human Resources', 'Recruitment and employee relations'),
+-- ('Marketing', 'Brand awareness and sales support');
 
-INSERT INTO employees (first_name, last_name, email, department_id, job_title, hire_date, salary) VALUES 
-('Rabee', 'Engineer', 'rabee@example.com', 1, 'Senior Developer', '2023-01-15', 85000),
-('John', 'Doe', 'john@example.com', 1, 'Junior Developer', '2023-06-01', 50000),
-('Jane', 'Smith', 'jane@example.com', 2, 'HR Manager', '2022-11-20', 70000);
+-- REPLACE INTO employees (first_name, last_name, email, department_id, job_title, hire_date, salary) VALUES 
+-- ('Rabee', 'Engineer', 'rabee@example.com', 1, 'Senior Developer', '2023-01-15', 85000),
+-- ('John', 'Doe', 'john@example.com', 1, 'Junior Developer', '2023-06-01', 50000),
+-- ('Jane', 'Smith', 'jane@example.com', 2, 'HR Manager', '2022-11-20', 70000);
 
-INSERT INTO leaves (employee_id, leave_type, start_date, end_date, status, reason) VALUES 
-(1, 'vacation', '2024-03-01', '2024-03-07', 'approved', 'Annual leave'),
-(3, 'sick', '2024-02-15', '2024-02-16', 'approved', 'Flu');
+-- REPLACE INTO leaves (employee_id, leave_type, start_date, end_date, status, reason) VALUES 
+-- (1, 'vacation', '2024-03-01', '2024-03-07', 'approved', 'Annual leave'),
+-- (3, 'sick', '2024-02-15', '2024-02-16', 'approved', 'Flu');
 
-INSERT INTO applications (applicant_name, email, applied_for, status) VALUES 
-('Alice Walker', 'alice@example.com', 'Backend Engineer', 'interviewing'),
-('Bob Ross', 'bob@example.com', 'UI Designer', 'pending');
+-- INSERT OR IGNORE INTO applications (name, email, phone, resume_url, applied_for, status) VALUES 
+-- ('Alice Walker', 'alice@example.com', '1234567890', 'resume.pdf', 'Backend Engineer', 'interviewing'),
+-- ('Bob Ross', 'bob@example.com', '1234567890', 'resume.pdf', 'UI Designer', 'pending');
+
+-- INSERT OR IGNORE INTO positions (name, description) VALUES 
+-- ('Software Engineer', 'Develop and maintain software applications'),
+-- ('Project Manager', 'Plan and execute projects'),
+-- ('HR Specialist', 'Manage HR processes');

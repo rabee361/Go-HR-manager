@@ -10,49 +10,16 @@
             <p class="text-muted">View and manage your workforce.</p>
         </div>
         <div class="search-bar">
-            <span class="search-icon"
-                style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);">🔍</span>
+            <span class="search-icon" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);"><i
+                    class="fa-solid fa-magnifying-glass"></i></span>
             <input type="text" name="q" class="search-input" placeholder="Search employees..."
-                hx-get="/employees/search" hx-trigger="keyup changed delay:500ms" hx-target="#employees-table-body"
+                hx-get="/employees" hx-trigger="keyup changed delay:500ms" hx-target="#employees_partial"
                 hx-indicator=".htmx-indicator">
         </div>
     </header>
 
-    <div class="data-table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Position</th>
-                    <th>Email</th>
-                    <th>Joined</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="employees-table-body">
-                <tr>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <div
-                                style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: bold;">
-                                R</div>
-                            <div>
-                                <strong>Rabee</strong><br>
-                                <small class="text-muted">eng.rabee@example.com</small>
-                            </div>
-                        </div>
-                    </td>
-                    <td>Senior Architect</td>
-                    <td>rabee@company.com</td>
-                    <td>Aug 15, 2023</td>
-                    <td>
-                        <button class="btn btn-ghost btn-sm">👁️</button>
-                        <button class="btn btn-ghost btn-sm">✏️</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <div class="htmx-indicator" style="padding: 1rem; text-align: center;">Loading...</div>
+    <div id="employees_partial">
+        {{template "employees_partial" .}}
     </div>
 </div>
 {{end}}

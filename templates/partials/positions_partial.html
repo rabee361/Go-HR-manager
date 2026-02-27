@@ -1,0 +1,32 @@
+{{ define "positions_partial" }}
+<div class="data-table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="positions-table-body">
+            {{range .Positions}}
+            <tr>
+                <td><strong>{{.Name}}</strong></td>
+                <td>{{.Description}}</td>
+                <td>{{.CreatedAt.Format "Jan 02, 2006"}}</td>
+                <td>
+                    <button class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="btn btn-ghost btn-sm text-danger"><i class="fa-solid fa-trash-can"></i></button>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="4" class="text-center p-8 text-muted">No positions found.</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    <div class="htmx-indicator" style="padding: 1rem; text-align: center;">Loading...</div>
+</div>
+{{ end }}
