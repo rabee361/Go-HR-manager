@@ -19,20 +19,19 @@ type App struct {
 	Templates             map[string]*template.Template
 }
 
+var app *App
+
 func main() {
-	// 1. Create a base context with a timeout for initialization
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// 2. Initialize DB
 	db, err := connectToDB(ctx)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
-	// 3. Initialize App with Dependencies
-	app := &App{
+	app = &App{
 		DepartmentRepository:  NewDepartmentRepository(db),
 		PositionRepository:    NewPositionRepository(db),
 		EmployeeRepository:    NewEmployeeRepository(db),
@@ -41,17 +40,20 @@ func main() {
 		Templates:             loadTemplates(),
 	}
 
-	// 4. Serve static files
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	// 5. Routes (using app methods as handlers)
 	http.HandleFunc("/", app.handleIndex)
 	http.HandleFunc("/departments", app.handleDepartments)
+	http.HandleFunc("/departments/export", app.handleExportDepartments)
 	http.HandleFunc("/positions", app.handlePositions)
+	http.HandleFunc("/positions/export", app.handleExportPositions)
 	http.HandleFunc("/employees", app.handleEmployees)
+	http.HandleFunc("/employees/export", app.handleExportEmployees)
 	http.HandleFunc("/applications", app.handleApplications)
+	http.HandleFunc("/applications/export", app.handleExportApplications)
 	http.HandleFunc("/leaves", app.handleLeaves)
+	http.HandleFunc("/leaves/export", app.handleExportLeaves)
 
 	fmt.Println("🚀 Server starting on :8080... 🌐")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
@@ -63,7 +65,6 @@ func loadTemplates() map[string]*template.Template {
 	tmpls := make(map[string]*template.Template)
 	baseFile := "templates/dashboard/base.html"
 
-	// Glob all partials
 	partials, err := filepath.Glob("templates/partials/*.html")
 	if err != nil {
 		log.Fatalf("Error globbing partials: %v", err)
@@ -79,7 +80,6 @@ func loadTemplates() map[string]*template.Template {
 		if name == "base.html" {
 			continue
 		}
-		// Combine base, partials, and the page file
 		allFiles := append([]string{baseFile, file}, partials...)
 		tmpls[name] = template.Must(template.ParseFiles(allFiles...))
 	}
@@ -228,5 +228,144 @@ func (app *App) handleLeaves(w http.ResponseWriter, r *http.Request) {
 
 	if err := app.Templates["leaves.html"].Execute(w, data); err != nil {
 		log.Printf("Template execution error: %v", err)
+	}
+}
+
+func (app *App) handleExportDepartments(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	departments, err := app.DepartmentRepository.GetDepartments(r.Context(), q)
+	if err != nil {
+		log.Printf("Error fetching departments for export: %v", err)
+		http.Error(w, "Failed to fetch departments", http.StatusInternalServerError)
+		return
+	}
+
+	headers := []string{"ID", "Name", "Description", "Created At"}
+	mapper := func(d Department) []string {
+		return []string{
+			fmt.Sprintf("%d", d.ID),
+			d.Name,
+			d.Description,
+			d.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+	}
+
+	SetExcelHeaders(w, "Departments")
+	if err := ExportToExcel(w, departments, headers, mapper); err != nil {
+		log.Printf("Error exporting departments: %v", err)
+	}
+}
+
+func (app *App) handleExportPositions(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	positions, err := app.PositionRepository.GetPositions(r.Context(), q)
+	if err != nil {
+		log.Printf("Error fetching positions for export: %v", err)
+		http.Error(w, "Failed to fetch positions", http.StatusInternalServerError)
+		return
+	}
+
+	headers := []string{"ID", "Name", "Description", "Created At"}
+	mapper := func(p Position) []string {
+		return []string{
+			fmt.Sprintf("%d", p.ID),
+			p.Name,
+			p.Description,
+			p.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+	}
+
+	SetExcelHeaders(w, "Positions")
+	if err := ExportToExcel(w, positions, headers, mapper); err != nil {
+		log.Printf("Error exporting positions: %v", err)
+	}
+}
+
+func (app *App) handleExportEmployees(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	employees, err := app.EmployeeRepository.GetEmployees(r.Context(), q)
+	if err != nil {
+		log.Printf("Error fetching employees for export: %v", err)
+		http.Error(w, "Failed to fetch employees", http.StatusInternalServerError)
+		return
+	}
+
+	headers := []string{"ID", "First Name", "Last Name", "Email", "Job Title", "Hire Date", "Salary", "Status", "Department ID", "Created At"}
+	mapper := func(e Employee) []string {
+		return []string{
+			fmt.Sprintf("%d", e.ID),
+			e.FirstName,
+			e.LastName,
+			e.Email,
+			e.JobTitle,
+			e.HireDate.Format("2006-01-02"),
+			fmt.Sprintf("%.2f", e.Salary),
+			e.Status,
+			fmt.Sprintf("%d", e.DepartmentID),
+			e.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+	}
+
+	SetExcelHeaders(w, "Employees")
+	if err := ExportToExcel(w, employees, headers, mapper); err != nil {
+		log.Printf("Error exporting employees: %v", err)
+	}
+}
+
+func (app *App) handleExportApplications(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	applications, err := app.ApplicationRepository.GetApplications(r.Context(), q)
+	if err != nil {
+		log.Printf("Error fetching applications for export: %v", err)
+		http.Error(w, "Failed to fetch applications", http.StatusInternalServerError)
+		return
+	}
+
+	headers := []string{"ID", "Name", "Email", "Phone", "Applied For", "Resume URL", "Status", "Created At"}
+	mapper := func(a Application) []string {
+		return []string{
+			fmt.Sprintf("%d", a.ID),
+			a.Name,
+			a.Email,
+			a.Phone,
+			a.AppliedFor,
+			a.ResumeURL,
+			a.Status,
+			a.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+	}
+
+	SetExcelHeaders(w, "Applications")
+	if err := ExportToExcel(w, applications, headers, mapper); err != nil {
+		log.Printf("Error exporting applications: %v", err)
+	}
+}
+
+func (app *App) handleExportLeaves(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	leaves, err := app.LeaveRepository.GetLeaves(r.Context(), q)
+	if err != nil {
+		log.Printf("Error fetching leaves for export: %v", err)
+		http.Error(w, "Failed to fetch leaves", http.StatusInternalServerError)
+		return
+	}
+
+	headers := []string{"ID", "Employee ID", "Leave Type", "Start Date", "End Date", "Status", "Reason", "Created At"}
+	mapper := func(l Leave) []string {
+		return []string{
+			fmt.Sprintf("%d", l.ID),
+			fmt.Sprintf("%d", l.EmployeeID),
+			l.LeaveType,
+			l.StartDate.Format("2006-01-02"),
+			l.EndDate.Format("2006-01-02"),
+			l.Status,
+			l.Reason,
+			l.CreatedAt.Format("2006-01-02 15:04:05"),
+		}
+	}
+
+	SetExcelHeaders(w, "Leaves")
+	if err := ExportToExcel(w, leaves, headers, mapper); err != nil {
+		log.Printf("Error exporting leaves: %v", err)
 	}
 }
