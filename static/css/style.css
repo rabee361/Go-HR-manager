@@ -257,6 +257,7 @@ body {
 }
 
 .btn-excel {
+    text-decoration: none;
     background: var(--success);
     color: white;
 }

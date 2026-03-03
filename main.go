@@ -7,8 +7,36 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"sync"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
 )
+
+var (
+	devMode = true // Set to true for development
+	clients = make(map[chan bool]bool)
+	mu      sync.Mutex
+)
+
+
+type Reloader struct {
+	watcher *fsnotify.Watcher
+}
+
+func (r *Reloader) Close() error {
+	return r.watcher.Close()
+}
+
+func NewReloader() *Reloader {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &Reloader{
+		watcher: watcher,
+	}
+}
 
 type App struct {
 	DepartmentRepository  DepartmentRepository
@@ -16,14 +44,22 @@ type App struct {
 	EmployeeRepository    EmployeeRepository
 	ApplicationRepository ApplicationRepository
 	LeaveRepository       LeaveRepository
+	reloader				  Reloader
 	Templates             map[string]*template.Template
 }
 
-var app *App
+func (app *App) AddPath(path string) error {
+	return app.reloader.watcher.Add(path)
+}
 
+var app *App
+	
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	reloader := NewReloader()
+	defer reloader.Close()
 
 	db, err := connectToDB(ctx)
 	if err != nil {
@@ -37,13 +73,45 @@ func main() {
 		EmployeeRepository:    NewEmployeeRepository(db),
 		ApplicationRepository: NewApplicationRepository(db),
 		LeaveRepository:       NewLeaveRepository(db),
+		reloader:             *reloader,
 		Templates:             loadTemplates(),
+	}
+
+	if devMode {
+		app.AddPath("templates/dashboard")
+		app.AddPath("templates/partials")
+		app.AddPath("static/css")
+
+		go func() {
+			for {
+				select {
+				case event, ok := <-app.reloader.watcher.Events:
+					if !ok {
+						return
+					}
+					if event.Op&fsnotify.Write == fsnotify.Write {
+						fmt.Printf("📝 File modified: %s. Notifying clients... 🔊\n", event.Name)
+						mu.Lock()
+						for client := range clients {
+							client <- true
+						}
+						mu.Unlock()
+					}
+				case err, ok := <-app.reloader.watcher.Errors:
+					if !ok {
+						return
+					}
+					log.Println("Watcher error:", err)
+				}
+			}
+		}()
 	}
 
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	http.HandleFunc("/", app.handleIndex)
+	http.HandleFunc("/dev-reload", app.handleDevReload)
 	http.HandleFunc("/departments", app.handleDepartments)
 	http.HandleFunc("/departments/export", app.handleExportDepartments)
 	http.HandleFunc("/positions", app.handlePositions)
@@ -86,10 +154,47 @@ func loadTemplates() map[string]*template.Template {
 	return tmpls
 }
 
+func (app *App) handleDevReload(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	messageChan := make(chan bool)
+	mu.Lock()
+	clients[messageChan] = true
+	mu.Unlock()
+
+	defer func() {
+		mu.Lock()
+		delete(clients, messageChan)
+		mu.Unlock()
+	}()
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+
+	for {
+		select {
+		case <-messageChan:
+			fmt.Fprintf(w, "data: reload\n\n")
+			flusher.Flush()
+		case <-r.Context().Done():
+			return
+		}
+	}
+}
+
 func (app *App) handleIndex(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
+	}
+
+	if devMode {
+		app.Templates = loadTemplates()
 	}
 
 	data := map[string]any{
@@ -113,6 +218,10 @@ func (app *App) handleDepartments(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{
 		"ActivePage":  "departments",
 		"Departments": departments,
+	}
+
+	if devMode {
+		app.Templates = loadTemplates()
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
@@ -141,6 +250,10 @@ func (app *App) handlePositions(w http.ResponseWriter, r *http.Request) {
 		"Positions":  positions,
 	}
 
+	if devMode {
+		app.Templates = loadTemplates()
+	}
+
 	if r.Header.Get("HX-Request") == "true" {
 		if err := app.Templates["positions.html"].ExecuteTemplate(w, "positions_partial", data); err != nil {
 			log.Printf("Template execution error: %v", err)
@@ -167,6 +280,10 @@ func (app *App) handleEmployees(w http.ResponseWriter, r *http.Request) {
 		"Employees":  employees,
 	}
 
+	if devMode {
+		app.Templates = loadTemplates()
+	}
+
 	if r.Header.Get("HX-Request") == "true" {
 		if err := app.Templates["employees.html"].ExecuteTemplate(w, "employees_partial", data); err != nil {
 			log.Printf("Template execution error: %v", err)
@@ -191,6 +308,10 @@ func (app *App) handleApplications(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{
 		"ActivePage":   "applications",
 		"Applications": applications,
+	}
+
+	if devMode {
+		app.Templates = loadTemplates()
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
