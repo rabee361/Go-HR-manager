@@ -1,0 +1,66 @@
+{{template "base.html" .}}
+
+{{define "title"}}HR Dashboard - Add Leave Request{{end}}
+
+{{define "content"}}
+<div class="animate-fade-in">
+    <div class="form-page-container">
+        <nav class="breadcrumb">
+            <a href="/">Dashboard</a>
+            <span class="breadcrumb-sep">/</span>
+            <a href="/leaves">Leaves</a>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-current">Add Leave</span>
+        </nav>
+        <div class="form-card">
+            <form hx-post="/leaves/add" hx-target="body" hx-push-url="/leaves">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Employee</label>
+                        <select name="employee_id" class="form-input">
+                            <option value="">Select Employee</option>
+                            {{range .Employees}}
+                            <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Leave Type</label>
+                        <select name="leave_type" class="form-input">
+                            <option value="vacation">Vacation</option>
+                            <option value="sick">Sick</option>
+                            <option value="personal">Personal</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" name="start_date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input type="date" name="end_date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-input">
+                            <option value="pending" selected>Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">Reason</label>
+                        <textarea name="reason" class="form-input" placeholder="Reason for leave..."></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <a href="/leaves" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-plus"></i> Submit Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{end}}

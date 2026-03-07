@@ -1,0 +1,68 @@
+{{template "base.html" .}}
+
+{{define "title"}}HR Dashboard - Update Application{{end}}
+
+{{define "content"}}
+<div class="animate-fade-in">
+    <div class="form-page-container">
+        <nav class="breadcrumb">
+            <a href="/">Dashboard</a>
+            <span class="breadcrumb-sep">/</span>
+            <a href="/applications">Applications</a>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-current">Update Application</span>
+        </nav>
+        <div class="form-card">
+            <form hx-put="/applications/update/{{.Application.ID}}" hx-target="body" hx-push-url="/applications">
+                <input type="hidden" name="id" value="{{.Application.ID}}">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Applicant Name</label>
+                        <input type="text" name="name" class="form-input" required value="{{.Application.Name}}"
+                            placeholder="e.g. Alice Walker">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-input" required value="{{.Application.Email}}"
+                            placeholder="alice@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" name="phone" class="form-input" value="{{.Application.Phone}}"
+                            placeholder="e.g. +1 234 567 890">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Applied For</label>
+                        <input type="text" name="applied_for" class="form-input" value="{{.Application.AppliedFor}}"
+                            placeholder="e.g. Backend Engineer">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">Resume URL</label>
+                        <input type="url" name="resume_url" class="form-input" value="{{.Application.ResumeURL}}"
+                            placeholder="https://example.com/resume.pdf">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-input">
+                            <option value="pending" {{if eq .Application.Status "pending" }}selected{{end}}>Pending
+                            </option>
+                            <option value="interviewing" {{if eq .Application.Status "interviewing" }}selected{{end}}>
+                                Interviewing</option>
+                            <option value="accepted" {{if eq .Application.Status "accepted" }}selected{{end}}>Accepted
+                            </option>
+                            <option value="rejected" {{if eq .Application.Status "rejected" }}selected{{end}}>Rejected
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <a href="/applications" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{end}}

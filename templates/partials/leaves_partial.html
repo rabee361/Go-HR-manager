@@ -3,6 +3,7 @@
     <table class="data-table">
         <thead>
             <tr>
+                <th>ID</th>
                 <th>Employee ID</th>
                 <th>Type</th>
                 <th>Period</th>
@@ -14,6 +15,7 @@
         <tbody id="leaves-table-body">
             {{range .Leaves}}
             <tr>
+                <td><strong>#{{.ID}}</strong></td>
                 <td><strong>#{{.EmployeeID}}</strong></td>
                 <td><span style="text-transform: capitalize;">{{.LeaveType}}</span></td>
                 <td>
@@ -35,13 +37,14 @@
                 </td>
                 <td><small class="text-muted">{{.Reason}}</small></td>
                 <td>
-                    <button class="btn btn-ghost btn-sm"><i class="fa-solid fa-pen-to-square"></i></button>
-                    <button class="btn btn-ghost btn-sm text-danger"><i class="fa-solid fa-trash-can"></i></button>
+                    <a href="/leaves/update/{{.ID}}" class="btn btn-ghost btn-sm"><i
+                            class="fa-solid fa-pen-to-square"></i></a>
+                    <button hx-delete="/leaves/delete" hx-vals='{"id":{{.ID}}}' class="btn btn-ghost btn-sm text-danger"><i class="fa-solid fa-trash-can"></i></button>
                 </td>
             </tr>
             {{else}}
             <tr>
-                <td colspan="6" style="text-align: center; padding: 2rem;" class="text-muted">No leave requests found.
+                <td colspan="8" style="text-align: center; padding: 2rem;" class="text-muted">No leave requests found.
                 </td>
             </tr>
             {{end}}

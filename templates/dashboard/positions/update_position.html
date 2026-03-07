@@ -1,0 +1,40 @@
+{{template "base.html" .}}
+
+{{define "title"}}HR Dashboard - Update Position{{end}}
+
+{{define "content"}}
+<div class="animate-fade-in">
+    <div class="form-page-container">
+        <nav class="breadcrumb">
+            <a href="/">Dashboard</a>
+            <span class="breadcrumb-sep">/</span>
+            <a href="/positions">Positions</a>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-current">Update Position</span>
+        </nav>
+        <div class="form-card">
+            <form hx-put="/positions/update/{{.Position.ID}}" hx-target="body" hx-push-url="/positions">
+                <input type="hidden" name="id" value="{{.Position.ID}}">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label class="form-label">Position Name</label>
+                        <input type="text" name="name" class="form-input" required value="{{.Position.Name}}"
+                            placeholder="e.g. Software Engineer">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-input"
+                            placeholder="Role responsibilities and requirements...">{{.Position.Description}}</textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <a href="/positions" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{end}}

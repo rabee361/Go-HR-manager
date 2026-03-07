@@ -58,6 +58,7 @@ type DepartmentRepository interface {
 	GetDepartments(ctx context.Context, q string) ([]Department, error)
 	GetDepartmentByID(ctx context.Context, id int) (*Department, error)
 	DeleteDepartment(ctx context.Context, id int) error
+	UpdateDepartment(ctx context.Context, department *Department) error
 	CreateDepartment(ctx context.Context, department *Department) error
 }
 
@@ -65,6 +66,7 @@ type PositionRepository interface {
 	GetPositions(ctx context.Context, q string) ([]Position, error)
 	GetPositionByID(ctx context.Context, id int) (*Position, error)
 	DeletePosition(ctx context.Context, id int) error
+	UpdatePosition(ctx context.Context, department *Position) error
 	CreatePosition(ctx context.Context, position *Position) error
 }
 
@@ -73,6 +75,7 @@ type EmployeeRepository interface {
 	GetEmployeeByID(ctx context.Context, id int) (*Employee, error)
 	DeleteEmployee(ctx context.Context, id int) error
 	CreateEmployee(ctx context.Context, employee *Employee) error
+	UpdateEmployee(ctx context.Context, employee *Employee) error
 }
 
 type ApplicationRepository interface {
@@ -80,6 +83,7 @@ type ApplicationRepository interface {
 	GetApplicationByID(ctx context.Context, id int) (*Application, error)
 	DeleteApplication(ctx context.Context, id int) error
 	CreateApplication(ctx context.Context, application *Application) error
+	UpdateApplication(ctx context.Context, application *Application) error
 }
 
 type LeaveRepository interface {
@@ -87,4 +91,5 @@ type LeaveRepository interface {
 	GetLeaveByID(ctx context.Context, id int) (*Leave, error)
 	DeleteLeave(ctx context.Context, id int) error
 	CreateLeave(ctx context.Context, leave *Leave) error
+	UpdateLeave(ctx context.Context, leave *Leave) error
 }

@@ -1,3 +1,4 @@
 .env
 blog_db.db
 *.db
+*.exe

@@ -47,7 +47,7 @@ func NewApplicationRepository(db *sql.DB) *SQLApplicationRepository {
 }
 
 func (r *SQLDepartmentRepository) GetDepartments(ctx context.Context, q string) ([]Department, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT * FROM departments WHERE name LIKE ?;", "%"+q+"%;")
+	rows, err := r.db.QueryContext(ctx, "SELECT * FROM departments WHERE name LIKE ?;", "%"+q+"%")
 	if err != nil {
 		return nil, fmt.Errorf("querying departments: %w", err)
 	}
@@ -192,6 +192,14 @@ func (r *SQLEmployeeRepository) CreateEmployee(ctx context.Context, employee *Em
 	return nil
 }
 
+func (r *SQLEmployeeRepository) UpdateEmployee(ctx context.Context, employee *Employee) error {
+	_, err := r.db.ExecContext(ctx, "UPDATE employees SET first_name = ?, last_name = ?, email = ?, job_title = ?, hire_date = ?, salary = ?, status = ?, department_id = ? WHERE id = ?;", employee.FirstName, employee.LastName, employee.Email, employee.JobTitle, employee.HireDate, employee.Salary, employee.Status, employee.DepartmentID, employee.ID)
+	if err != nil {
+		return fmt.Errorf("updating employee: %w", err)
+	}
+	return nil
+}
+
 func (r *SQLEmployeeRepository) DeleteEmployee(ctx context.Context, id int) error {
 	_, err := r.db.ExecContext(ctx, "DELETE FROM employees WHERE id = ?;", id)
 	if err != nil {
@@ -238,6 +246,14 @@ func (r *SQLApplicationRepository) CreateApplication(ctx context.Context, app *A
 	return nil
 }
 
+func (r *SQLApplicationRepository) UpdateApplication(ctx context.Context, app *Application) error {
+	_, err := r.db.ExecContext(ctx, "UPDATE applications SET name = ?, email = ?, phone = ?, applied_for = ?, resume_url = ?, status = ? WHERE id = ?;", app.Name, app.Email, app.Phone, app.AppliedFor, app.ResumeURL, app.Status, app.ID)
+	if err != nil {
+		return fmt.Errorf("updating application: %w", err)
+	}
+	return nil
+}
+
 func (r *SQLApplicationRepository) DeleteApplication(ctx context.Context, id int) error {
 	_, err := r.db.ExecContext(ctx, "DELETE FROM applications WHERE id = ?;", id)
 	if err != nil {
@@ -280,6 +296,14 @@ func (r *SQLLeaveRepository) CreateLeave(ctx context.Context, l *Leave) error {
 	_, err := r.db.ExecContext(ctx, "INSERT INTO leaves (employee_id, leave_type, start_date, end_date, status, reason) VALUES (?, ?, ?, ?, ?, ?);", l.EmployeeID, l.LeaveType, l.StartDate, l.EndDate, l.Status, l.Reason)
 	if err != nil {
 		return fmt.Errorf("creating leave: %w", err)
+	}
+	return nil
+}
+
+func (r *SQLLeaveRepository) UpdateLeave(ctx context.Context, l *Leave) error {
+	_, err := r.db.ExecContext(ctx, "UPDATE leaves SET employee_id = ?, leave_type = ?, start_date = ?, end_date = ?, status = ?, reason = ? WHERE id = ?;", l.EmployeeID, l.LeaveType, l.StartDate, l.EndDate, l.Status, l.Reason, l.ID)
+	if err != nil {
+		return fmt.Errorf("updating leave: %w", err)
 	}
 	return nil
 }

@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,7 +20,6 @@ var (
 	clients = make(map[chan bool]bool)
 	mu      sync.Mutex
 )
-
 
 type Reloader struct {
 	watcher *fsnotify.Watcher
@@ -44,7 +45,7 @@ type App struct {
 	EmployeeRepository    EmployeeRepository
 	ApplicationRepository ApplicationRepository
 	LeaveRepository       LeaveRepository
-	reloader				  Reloader
+	reloader              Reloader
 	Templates             map[string]*template.Template
 }
 
@@ -53,7 +54,7 @@ func (app *App) AddPath(path string) error {
 }
 
 var app *App
-	
+
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -73,7 +74,7 @@ func main() {
 		EmployeeRepository:    NewEmployeeRepository(db),
 		ApplicationRepository: NewApplicationRepository(db),
 		LeaveRepository:       NewLeaveRepository(db),
-		reloader:             *reloader,
+		reloader:              *reloader,
 		Templates:             loadTemplates(),
 	}
 
@@ -114,14 +115,29 @@ func main() {
 	http.HandleFunc("/dev-reload", app.handleDevReload)
 	http.HandleFunc("/departments", app.handleDepartments)
 	http.HandleFunc("/departments/export", app.handleExportDepartments)
+	http.HandleFunc("/departments/add", app.handleAddDepartments)
+	http.HandleFunc("/departments/delete", app.handleDeleteDepartment)
+	http.HandleFunc("/departments/update/{id}", app.handleUpdateDepartment)
 	http.HandleFunc("/positions", app.handlePositions)
 	http.HandleFunc("/positions/export", app.handleExportPositions)
+	http.HandleFunc("/positions/add", app.handleAddPositions)
+	http.HandleFunc("/positions/delete", app.handleDeletePosition)
+	http.HandleFunc("/positions/update/{id}", app.handleUpdatePosition)
 	http.HandleFunc("/employees", app.handleEmployees)
 	http.HandleFunc("/employees/export", app.handleExportEmployees)
+	http.HandleFunc("/employees/add", app.handleAddEmployees)
+	http.HandleFunc("/employees/update/{id}", app.handleUpdateEmployee)
+	http.HandleFunc("/employees/delete", app.handleDeleteEmployee)
 	http.HandleFunc("/applications", app.handleApplications)
 	http.HandleFunc("/applications/export", app.handleExportApplications)
+	http.HandleFunc("/applications/add", app.handleAddApplications)
+	http.HandleFunc("/applications/update/{id}", app.handleUpdateApplication)
+	http.HandleFunc("/applications/delete", app.handleDeleteApplication)
 	http.HandleFunc("/leaves", app.handleLeaves)
 	http.HandleFunc("/leaves/export", app.handleExportLeaves)
+	http.HandleFunc("/leaves/add", app.handleAddLeaves)
+	http.HandleFunc("/leaves/update/{id}", app.handleUpdateLeave)
+	http.HandleFunc("/leaves/delete", app.handleDeleteLeave)
 
 	fmt.Println("🚀 Server starting on :8080... 🌐")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
@@ -132,17 +148,27 @@ func main() {
 func loadTemplates() map[string]*template.Template {
 	tmpls := make(map[string]*template.Template)
 	baseFile := "templates/dashboard/base.html"
+	files := []string{}
 
 	partials, err := filepath.Glob("templates/partials/*.html")
 	if err != nil {
 		log.Fatalf("Error globbing partials: %v", err)
 	}
 
-	files, err := filepath.Glob("templates/dashboard/*.html")
-	if err != nil {
-		log.Fatalf("Error globbing templates: %v", err)
-	}
+	err = filepath.WalkDir("templates/dashboard/", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			// Handle the error here to prevent panic and continue the walk (or stop by returning the error)
+			fmt.Printf("preventing panic by handling failure accessing a path %q: %v\n", path, err)
+			return err
+		}
 
+		if d.IsDir() {
+			return nil
+		}
+
+		files = append(files, path)
+		return nil
+	})
 	for _, file := range files {
 		name := filepath.Base(file)
 		if name == "base.html" {
@@ -352,6 +378,107 @@ func (app *App) handleLeaves(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (app *App) handleAddDepartments(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		if err := app.Templates["add_department.html"].Execute(w, nil); err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	description := r.FormValue("description")
+	name := r.FormValue("name")
+
+	department := Department{Name: name, Description: description}
+	err = app.DepartmentRepository.CreateDepartment(r.Context(), &department)
+	if err != nil {
+		log.Printf("Error adding department : %v", err)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/departments")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
+func (app *App) handleUpdateDepartment(w http.ResponseWriter, r *http.Request) {
+	// 1. Get the ID from the URL
+	idStr := r.PathValue("id") // Works in Go 1.22+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	// 2. Handle GET: Show the form with existing data
+	if r.Method == http.MethodGet {
+		dept, err := app.DepartmentRepository.GetDepartmentByID(r.Context(), id)
+		if err != nil || dept == nil {
+			http.Error(w, "Department not found", http.StatusNotFound)
+			return
+		}
+
+		data := map[string]any{
+			"Department": dept,
+		}
+
+		if err := app.Templates["update_department.html"].Execute(w, data); err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
+		return
+	}
+
+	// 3. Handle POST/PUT: Save the changes
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	department := Department{
+		ID:          id,
+		Name:        r.FormValue("name"),
+		Description: r.FormValue("description"),
+	}
+
+	if err := app.DepartmentRepository.UpdateDepartment(r.Context(), &department); err != nil {
+		log.Printf("Error updating department: %v", err)
+		http.Error(w, "Failed to update", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("HX-Redirect", "/departments")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
+func (app *App) handleDeleteDepartment(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		fmt.Println("method is not delete")
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.Atoi(r.FormValue("id"))
+	if err != nil {
+		http.Error(w, "can't parse id", http.StatusBadRequest)
+		return
+	}
+	err = app.DepartmentRepository.DeleteDepartment(r.Context(), id)
+	if err != nil {
+		http.Error(w, "can't delete department", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/departments")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
 func (app *App) handleExportDepartments(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	departments, err := app.DepartmentRepository.GetDepartments(r.Context(), q)
@@ -402,6 +529,101 @@ func (app *App) handleExportPositions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (app *App) handleAddPositions(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		if err := app.Templates["add_position.html"].Execute(w, nil); err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	description := r.FormValue("description")
+	name := r.FormValue("name")
+
+	position := Position{Name: name, Description: description}
+	err = app.PositionRepository.CreatePosition(r.Context(), &position)
+	if err != nil {
+		log.Printf("Error adding position : %v", err)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/positions")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
+func (app *App) handleUpdatePosition(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	// 2. Handle GET: Show the form with existing data
+	if r.Method == http.MethodGet {
+		pos, err := app.PositionRepository.GetPositionByID(r.Context(), id)
+		if err != nil || pos == nil {
+			http.Error(w, "Position not found", http.StatusNotFound)
+			return
+		}
+
+		data := map[string]any{
+			"Position": pos,
+		}
+
+		if err := app.Templates["update_position.html"].Execute(w, data); err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
+		return
+	}
+
+	// 3. Handle POST/PUT: Save the changes
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	position := Position{
+		ID:          id,
+		Name:        r.FormValue("name"),
+		Description: r.FormValue("description"),
+	}
+
+	if err := app.PositionRepository.UpdatePosition(r.Context(), &position); err != nil {
+		log.Printf("Error updating position: %v", err)
+		http.Error(w, "Failed to update", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("HX-Redirect", "/positions")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
+func (app *App) handleDeletePosition(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		return
+	}
+
+	id, err := strconv.Atoi(r.FormValue("id"))
+	if err != nil {
+		return
+	}
+	app.PositionRepository.DeletePosition(r.Context(), id)
+	w.Header().Set("HX-Redirect", "/positions")
+	w.WriteHeader(http.StatusSeeOther)
+
+}
+
 func (app *App) handleExportEmployees(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	employees, err := app.EmployeeRepository.GetEmployees(r.Context(), q)
@@ -433,6 +655,108 @@ func (app *App) handleExportEmployees(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (app *App) handleAddEmployees(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		if err := app.Templates["add_employee.html"].Execute(w, nil); err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	firstName := r.FormValue("first_name")
+	lastName := r.FormValue("last_name")
+
+	employee := Employee{FirstName: firstName, LastName: lastName}
+	err = app.EmployeeRepository.CreateEmployee(r.Context(), &employee)
+	if err != nil {
+		log.Printf("Error adding employee : %v", err)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/employees")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
+func (app *App) handleUpdateEmployee(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		emp, err := app.EmployeeRepository.GetEmployeeByID(r.Context(), id)
+		if err != nil || emp == nil {
+			http.Error(w, "Employee not found", http.StatusNotFound)
+			return
+		}
+
+		data := map[string]any{
+			"Emp": emp,
+		}
+		if err := app.Templates["update_employee.html"].Execute(w, data); err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	salary, _ := strconv.ParseFloat(r.FormValue("salary"), 64)
+	deptID, _ := strconv.Atoi(r.FormValue("department_id"))
+	hireDate, _ := time.Parse("2006-01-02", r.FormValue("hire_date"))
+
+	employee := Employee{
+		ID:           id,
+		FirstName:    r.FormValue("first_name"),
+		LastName:     r.FormValue("last_name"),
+		Email:        r.FormValue("email"),
+		JobTitle:     r.FormValue("job_title"),
+		Salary:       salary,
+		Status:       r.FormValue("status"),
+		DepartmentID: deptID,
+		HireDate:     hireDate,
+	}
+
+	err = app.EmployeeRepository.UpdateEmployee(r.Context(), &employee)
+	if err != nil {
+		log.Printf("Error updating employee : %v", err)
+		http.Error(w, "Failed to update employee", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/employees")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
+func (app *App) handleDeleteEmployee(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		return
+	}
+
+	id, err := strconv.Atoi(r.FormValue("id"))
+	if err != nil {
+		return
+	}
+	app.EmployeeRepository.DeleteEmployee(r.Context(), id)
+	w.Header().Set("HX-Redirect", "/employees")
+	w.WriteHeader(http.StatusSeeOther)
+
+}
+
 func (app *App) handleExportApplications(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	applications, err := app.ApplicationRepository.GetApplications(r.Context(), q)
@@ -462,6 +786,108 @@ func (app *App) handleExportApplications(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+func (app *App) handleAddApplications(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		if err := app.Templates["add_application.html"].Execute(w, nil); err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	name := r.FormValue("name")
+	email := r.FormValue("email")
+	phone := r.FormValue("phone")
+	appliedFor := r.FormValue("applied_for")
+	resumeURL := r.FormValue("resume_url")
+	status := r.FormValue("status")
+
+	application := Application{Name: name, Email: email, Phone: phone, AppliedFor: appliedFor, ResumeURL: resumeURL, Status: status}
+	err = app.ApplicationRepository.CreateApplication(r.Context(), &application)
+	if err != nil {
+		log.Printf("Error adding application : %v", err)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/applications")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
+func (app *App) handleDeleteApplication(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(r.FormValue("id"))
+
+	err = app.ApplicationRepository.DeleteApplication(r.Context(), id)
+	if err != nil {
+		log.Printf("Error deleting application : %v", err)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/applications")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
+func (app *App) handleUpdateApplication(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		appData, err := app.ApplicationRepository.GetApplicationByID(r.Context(), id)
+		if err != nil || appData == nil {
+			http.Error(w, "Application not found", http.StatusNotFound)
+			return
+		}
+
+		data := map[string]any{
+			"Application": appData,
+		}
+		if err := app.Templates["update_application.html"].Execute(w, data); err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	application := Application{
+		ID:         id,
+		Name:       r.FormValue("name"),
+		Email:      r.FormValue("email"),
+		Phone:      r.FormValue("phone"),
+		AppliedFor: r.FormValue("applied_for"),
+		ResumeURL:  r.FormValue("resume_url"),
+		Status:     r.FormValue("status"),
+	}
+
+	err = app.ApplicationRepository.UpdateApplication(r.Context(), &application)
+	if err != nil {
+		log.Printf("Error updating application : %v", err)
+		http.Error(w, "Failed to update application", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/applications")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
 func (app *App) handleExportLeaves(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	leaves, err := app.LeaveRepository.GetLeaves(r.Context(), q)
@@ -489,4 +915,110 @@ func (app *App) handleExportLeaves(w http.ResponseWriter, r *http.Request) {
 	if err := ExportToExcel(w, leaves, headers, mapper); err != nil {
 		log.Printf("Error exporting leaves: %v", err)
 	}
+}
+
+func (app *App) handleAddLeaves(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		if err := app.Templates["add_leave.html"].Execute(w, nil); err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	employeeID, err := strconv.Atoi(r.FormValue("employee_id"))
+	leaveType := r.FormValue("leave_type")
+	startDate, err := time.Parse("2006-01-02", r.FormValue("start_date"))
+	endDate, err := time.Parse("2006-01-02", r.FormValue("end_date"))
+	status := r.FormValue("status")
+	reason := r.FormValue("reason")
+
+	leave := Leave{EmployeeID: employeeID, LeaveType: leaveType, StartDate: startDate, EndDate: endDate, Status: status, Reason: reason}
+	err = app.LeaveRepository.CreateLeave(r.Context(), &leave)
+	if err != nil {
+		log.Printf("Error adding leave : %v", err)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/leaves")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
+func (app *App) handleDeleteLeave(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		return
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(r.FormValue("id"))
+
+	err = app.LeaveRepository.DeleteLeave(r.Context(), id)
+	if err != nil {
+		log.Printf("Error deleting leave : %v", err)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/leaves")
+	w.WriteHeader(http.StatusSeeOther)
+}
+
+func (app *App) handleUpdateLeave(w http.ResponseWriter, r *http.Request) {
+	idStr := r.PathValue("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		leave, err := app.LeaveRepository.GetLeaveByID(r.Context(), id)
+		if err != nil || leave == nil {
+			http.Error(w, "Leave not found", http.StatusNotFound)
+			return
+		}
+
+		data := map[string]any{
+			"Leave": leave,
+		}
+		if err := app.Templates["update_leave.html"].Execute(w, data); err != nil {
+			log.Printf("Template execution error: %v", err)
+		}
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "can't parse form", http.StatusBadRequest)
+		return
+	}
+
+	employeeID, _ := strconv.Atoi(r.FormValue("employee_id"))
+	startDate, _ := time.Parse("2006-01-02", r.FormValue("start_date"))
+	endDate, _ := time.Parse("2006-01-02", r.FormValue("end_date"))
+
+	leave := Leave{
+		ID:         id,
+		EmployeeID: employeeID,
+		LeaveType:  r.FormValue("leave_type"),
+		StartDate:  startDate,
+		EndDate:    endDate,
+		Status:     r.FormValue("status"),
+		Reason:     r.FormValue("reason"),
+	}
+
+	err = app.LeaveRepository.UpdateLeave(r.Context(), &leave)
+	if err != nil {
+		log.Printf("Error updating leave : %v", err)
+		http.Error(w, "Failed to update leave", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("HX-Redirect", "/leaves")
+	w.WriteHeader(http.StatusSeeOther)
 }
